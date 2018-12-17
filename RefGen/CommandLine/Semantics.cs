@@ -125,16 +125,14 @@ namespace RefGen.CommandLine
                             if (!Directory.Exists(refAssemblyDirectory2))
                             {
                                 Directory.CreateDirectory(refAssemblyDirectory2);
-                                refAssemblyDirectory = refAssemblyDirectory2;
                             }
+                            refAssemblyDirectory = refAssemblyDirectory2;
                         }
                         catch (Exception)
                         {
                             throw new ArgumentException($"Could not create ref direcotry {refAssemblyDirectory}", "input", e);
                         }
-
                     }
-
                 }
 
                 ReferenceAssembly = Path.Combine(refAssemblyDirectory, Path.GetFileName(InputAssembly));
