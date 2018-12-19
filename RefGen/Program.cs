@@ -33,6 +33,8 @@ namespace RefGen
             Console.WriteLine($"ref assembly: {options.ReferenceAssembly}");
             Console.WriteLine($"access modifiers: {options.AccessModifier}");
 
+            new RefAssemblyGenerator(options.InputAssembly, options.ReferenceAssembly, options.AccessModifier).Generate();
+
         }
     }
 }

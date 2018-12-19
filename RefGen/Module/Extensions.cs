@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using MethodAttributes = dnlib.DotNet.MethodAttributes;
 
 namespace RefGen.Module
 {
@@ -169,6 +170,42 @@ namespace RefGen.Module
             var declaringAssemblyLocation = (t.DefinitionAssembly as AssemblyDef)?.ManifestModule.Location;
             var type = Assembly.LoadFrom(declaringAssemblyLocation).GetType(t.ReflectionFullName, throwOnError: true);
             return type.IsVisible;
+        }
+
+        /// <summary>
+        /// Public = IsPublic && FamAndAssem && Family 
+        /// </summary>
+        /// <param name="m"></param>
+        /// <returns></returns>
+        public static bool IsPublic(this MethodDef m)
+        {
+            return
+                m.IsPublic;
+        }
+
+        /// <summary>
+        /// Internal = Assembly && FamAndAssem && Private
+        /// </summary>
+        /// <param name="m"></param>
+        /// <returns></returns>
+        public static bool IsInternal(this MethodDef m)
+        {
+            return
+                !m.IsPrivate
+                && m.IsAssembly;
+        }
+
+        public static bool IsPrivate(this MethodDef m)
+        {
+            //return
+            //    !m.IsPublic
+            //    && !m.Access.HasFlag(MethodAttributes.Public)
+            //    && !m.Access.HasFlag(MethodAttributes.FamANDAssem)
+            //    && !m.Access.HasFlag(MethodAttributes.Family)
+            //    && !m.Access.HasFlag(MethodAttributes.Assembly)
+            //    && m.Access.HasFlag(MethodAttributes.Private)
+            //    && !m.Access.HasFlag(MethodAttributes.PrivateScope);
+            return m.Access.HasFlag(MethodAttributes.Private);
         }
     }
 }
