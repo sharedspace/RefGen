@@ -9,6 +9,6 @@
     <!-- Don't transitively copy output files, since everything builds to the same folder. -->
     <UseCommonOutputDirectory>True</UseCommonOutputDirectory>
 
-    <MSBuildProjectExtensionsPath>$(SolutionDir)\artifacts\obj\</MSBuildProjectExtensionsPath>
+    <MSBuildProjectExtensionsPath>$(SolutionDir)artifacts\obj\</MSBuildProjectExtensionsPath>
   </PropertyGroup>
 </Project>
