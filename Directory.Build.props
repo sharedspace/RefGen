@@ -1,14 +1,4 @@
 <Project>
-  <PropertyGroup>
-    <IntermediateOutputPath>$(SolutionDir)\artifacts\obj\$(Configuration)\$(TargetFramework)\$(MSBuildProjectName)\</IntermediateOutputPath>
-    <OutputPath>$(SolutionDir)\artifacts\bin\$(Configuration)\$(TargetFramework)\$(AssemblyName)\</OutputPath>
-    <OutDir>$(OutputPath)</OutDir>
+  <Import Project="eng/FolderPaths.props"/>
 
-    <OutputPath>$(SolutionDir)\artifacts\bin\$(Configuration)\$(TargetFramework)\</OutputPath>
-    <OutDir>$(OutputPath)</OutDir>
-    <!-- Don't transitively copy output files, since everything builds to the same folder. -->
-    <UseCommonOutputDirectory>True</UseCommonOutputDirectory>
-
-    <MSBuildProjectExtensionsPath>$(SolutionDir)artifacts\obj\</MSBuildProjectExtensionsPath>
-  </PropertyGroup>
 </Project>
