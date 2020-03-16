@@ -6,28 +6,27 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace RefGen
 {
     class Program
     {
-        public static int Main(string[] args)
+        public static async Task<int> Main(string[] args)
         {
             var rootCommand = new RootCommand
             {
-                new Option<FileInfo>(
-                    new string[] {"--input", "-i" },
-                    "Input Assembly"
-                    )
+                new Option<FileInfo>(new string[]{"-i" , "--input"}).ExistingOnly()
             };
 
             rootCommand.Description = "Reference Assembly Generator";
-            rootCommand.Handler = CommandHandler.Create<FileInfo>(ProcessCommandLineArgs);
-            return rootCommand.InvokeAsync(args).Result;
+            rootCommand.Handler = CommandHandler.Create<FileSystemInfo>(ProcessCommandLineArgs);
+            return await rootCommand.InvokeAsync(args);
         }
 
-        private static void ProcessCommandLineArgs([NotNull]FileInfo file)
+        private static void ProcessCommandLineArgs(FileSystemInfo i)
         {
+            ReferenceGenerator.Generate(i);
         }
     }
 }
