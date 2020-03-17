@@ -2,7 +2,7 @@
 
 namespace RefGen
 {
-    public class A 
+    public partial class A 
     { 
         static A()
         {
@@ -45,9 +45,19 @@ namespace RefGen
             }
         }
 
+        public bool IsGreen 
+        {
+            get
+            {
+                return _b.IsGreen;
+            }
+        }
+
         private bool _good;
 
         [ThreadStatic]
         private static bool _threadStaticValue;
+
+        private B _b = new B();
     }
 }
