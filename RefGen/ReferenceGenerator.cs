@@ -27,6 +27,7 @@ namespace RefGen
                 {
                     var assemblyDefinition = AssemblyDefinition.ReadAssembly(file.FullName);
                     assemblyDefinition.RemoveMethodBodies();
+                    assemblyDefinition.RemoveNonPublicTypes();
                     assemblyDefinition.Write(scopedCopy.FullName);
 
                     Console.WriteLine(scopedCopy.FullName);

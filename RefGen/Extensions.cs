@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace RefGen
@@ -55,10 +56,31 @@ namespace RefGen
             }
         }
 
-        internal static void RemoveMethodBodies2(this AssemblyDefinition def)
+        internal static void RemoveNonPublicTypes(this AssemblyDefinition def)
         {
-            throw new NotImplementedException();
-        }
+            var entryPointType = def.MainModule.EntryPoint.DeclaringType;
 
+            var publicTypes =
+                def.MainModule.Types.Where(
+                    (t) => t.IsPublic || t.IsNestedPublic || t.IsNestedAssembly);
+            var nonPublicTypes =
+                def.MainModule.Types.Where((t) => !publicTypes.Contains(t)).ToList();
+            foreach (var type in nonPublicTypes)
+            {
+                if (type == entryPointType)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    def.MainModule.Types.Remove(type);
+                }
+                catch(Exception e)
+                {
+                    Console.WriteLine(e.ToString());
+                }
+            }
+        }
     }
 }
