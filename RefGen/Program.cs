@@ -12,7 +12,7 @@ namespace RefGen
 {
     class Program
     {
-        public static async Task<int> Main(string[] args)
+        public static int Main(string[] args)
         {
             var rootCommand = new RootCommand
             {
@@ -21,7 +21,7 @@ namespace RefGen
 
             rootCommand.Description = "Reference Assembly Generator";
             rootCommand.Handler = CommandHandler.Create<FileSystemInfo>(ProcessCommandLineArgs);
-            return await rootCommand.InvokeAsync(args);
+            return rootCommand.Invoke(args);
         }
 
         private static void ProcessCommandLineArgs(FileSystemInfo i)
