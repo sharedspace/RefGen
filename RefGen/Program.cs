@@ -10,9 +10,9 @@ using System.Threading.Tasks;
 
 namespace RefGen
 {
-    class Program
+    internal class Program
     {
-        public static int Main(string[] args)
+        private static int Main(string[] args)
         {
             var rootCommand = new RootCommand
             {
