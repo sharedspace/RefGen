@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using Mono.Cecil;
 
@@ -30,14 +31,20 @@ namespace RefGen
                     assemblyDefinition.RemoveNonPublicTypes();
                     assemblyDefinition.RemoveNonPublicNestedTypes();
                     assemblyDefinition.RemoveNonPublicMethodsAndFields();
+
+                    assemblyDefinition.MainModule.Attributes = ModuleAttributes.ILOnly;
+                    
+
                     assemblyDefinition.Write(scopedCopy.FullName);
 
                     Console.WriteLine(scopedCopy.FullName);
+                    Trace.WriteLine(scopedCopy.FullName);
                 }
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
+                Trace.WriteLine(e.ToString());
             }
         }
     }
