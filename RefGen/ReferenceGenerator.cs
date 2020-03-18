@@ -28,12 +28,14 @@ namespace RefGen
                     var assemblyDefinition = AssemblyDefinition.ReadAssembly(file.FullName);
                     assemblyDefinition.RemoveMethodBodies();
                     assemblyDefinition.RemoveNonPublicTypes();
+                    assemblyDefinition.RemoveNonPublicNestedTypes();
+                    assemblyDefinition.RemoveNonPublicMethodsAndFields();
                     assemblyDefinition.Write(scopedCopy.FullName);
 
                     Console.WriteLine(scopedCopy.FullName);
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
             }

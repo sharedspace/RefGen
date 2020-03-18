@@ -58,7 +58,7 @@ namespace RefGen
 
         internal static void RemoveNonPublicTypes(this AssemblyDefinition def)
         {
-            var entryPointType = def.MainModule.EntryPoint.DeclaringType;
+            var entryPointType = def.EntryPoint.DeclaringType;
 
             var publicTypes =
                 def.MainModule.Types.Where(
@@ -81,6 +81,54 @@ namespace RefGen
                     Console.WriteLine(e.ToString());
                 }
             }
+        }
+
+        internal static void RemoveNonPublicNestedTypes(this AssemblyDefinition def)
+        {
+            var typesWithNestedTypes = def.MainModule.Types.Where((t) => t.HasNestedTypes);
+            foreach (var type in typesWithNestedTypes)
+            {
+                var nonPublicNestedTypes =
+                    type.NestedTypes.Where((t) => !t.IsNestedPublic).ToList();
+                nonPublicNestedTypes.ForEach((t) => type.NestedTypes.Remove(t));
+            }
+        }
+
+        internal static void RemoveNonPublicMethodsAndFields(this AssemblyDefinition def)
+        {
+            var entryPointMethod = def.EntryPoint;
+
+            foreach (var type in def.MainModule.Types)
+            {
+                var nonPublicMethods = 
+                    type.Methods.Where((m) => !m.IsPublic).ToList();
+                var nonPublicFields =
+                    type.Fields.Where((f) => !f.IsPublic).ToList();
+
+                nonPublicMethods.ForEach((m) => 
+                {
+                    if (m != entryPointMethod)
+                    {
+                        type.Methods.Remove(m);
+                    }
+                });
+                nonPublicFields.ForEach((f) => type.Fields.Remove(f));
+            }
+        }
+
+        internal static void ChangeToDll(this AssemblyDefinition def)
+        {
+            def.MainModule.EntryPoint.DeclaringType.Methods.Remove(def.MainModule.EntryPoint);
+
+            def.Modules.ToList().ForEach((m) => m.Kind = ModuleKind.Dll);
+            def.Modules.ToList().ForEach((m) => m.EntryPoint = null);
+            def.MainModule.EntryPoint = null;
+            def.EntryPoint = null;
+
+           
+
+            Debug.Assert(def.MainModule.Kind == ModuleKind.Dll);
+            Debug.Assert(def.MainModule.EntryPoint == null);
         }
     }
 }
