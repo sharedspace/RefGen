@@ -65,7 +65,7 @@ namespace RefGen
                         il.Emit(OpCodes.Newobj, tRefNotImplementedExceptionCtor);
                         il.Emit(OpCodes.Throw);
 
-                        Trace.WriteLine($"Removed {method.FullName}");
+                        Trace.WriteLine($"Stubbed {method.FullName}");
                     }
                 }
             }
@@ -100,6 +100,12 @@ namespace RefGen
                 try
                 {
                     def.MainModule.Types.Remove(type);
+
+                    if (def.MainModule.GetMemberReferences().Where(m => m.DeclaringType == type).ToList().Count != 0)
+                    {
+                        Trace.WriteLine($"WARNING: {type.FullName} has dangling references");
+                    }
+
                     Trace.WriteLine($"Removed {type.FullName}");
                 }
                 catch(Exception e)
@@ -124,6 +130,10 @@ namespace RefGen
                 {
                     type.NestedTypes.Remove(nestedType);
                     Trace.WriteLine($"Removed {nestedType.FullName}");
+                    if (def.MainModule.GetMemberReferences().Where(m => m.DeclaringType == nestedType).ToList().Count != 0)
+                    {
+                        Trace.WriteLine($"WARNING: {nestedType.FullName} has dangling references");
+                    }
                 }
             }
         }
@@ -149,15 +159,129 @@ namespace RefGen
                     if (m != entryPointMethod)
                     {
                         type.Methods.Remove(m);
-                        Trace.WriteLine($"Removed {m.FullName}");
+                        Trace.WriteLine($"Removed {m?.DeclaringType?.FullName ?? "Unknown"} | {m.FullName}");
+                        if (def.MainModule.GetMemberReferences().Where(mr => mr == m).ToList().Count != 0)
+                        {
+                            Trace.WriteLine($"WARNING: {m.FullName} has dangling references");
+                        }
                     }
                 });
                 nonPublicFields.ForEach((f) => 
                 {
                     type.Fields.Remove(f);
-                    Trace.WriteLine($"Removed {f.FullName}");
+                    Trace.WriteLine($"Removed {f?.DeclaringType?.FullName ?? "Unknown"} | {f.FullName}");
+                    if (def.MainModule.GetMemberReferences().Where(mr => mr == f).ToList().Count != 0)
+                    {
+                        Trace.WriteLine($"WARNING: {f.FullName} has dangling references");
+                    }
                 });
             }
+        }
+
+        internal static void RemoveFieldInitializers(this AssemblyDefinition def)
+        {
+            Trace.IndentLevel = 0;
+            Trace.WriteLine(nameof(RemoveFieldInitializers));
+            def.MainModule.Types.ToList().ForEach(t => t.RemoveFieldInitializers());
+        }
+
+        internal static void RemoveFieldInitializers(this TypeDefinition type)
+        {
+            Trace.Indent();
+            foreach (var field in type.Fields)
+            {
+                if (field.Constant == null)
+                {
+                    field.InitialValue = null;
+                    Trace.WriteLine($"Removed: {field.DeclaringType.FullName} | {field.FullName}");
+                }
+                else
+                {
+                    Trace.WriteLine($"Skipping const field: {field.DeclaringType.FullName} | {field.FullName}={field.Constant.ToString()}");
+                }
+            }
+
+            type.NestedTypes?.ToList()?.ForEach(t => t.RemoveFieldInitializers());
+            Trace.Unindent();
+        }
+
+        internal static void RemoveNonPublicProperties (this AssemblyDefinition def)
+        {
+            Trace.IndentLevel = 0;
+            Trace.WriteLine(nameof(RemoveNonPublicProperties));
+            foreach (var type in def.MainModule.Types)
+            {
+                type.RemoveNonPublicProperties();
+            }
+        }
+
+        internal static void RemoveNonPublicProperties(this TypeDefinition type)
+        {
+            Trace.Indent();
+            try
+            {
+                var propertiesToRemove = new List<PropertyDefinition>();
+                foreach (var p in type.Properties)
+                {
+                    if (!p.GetMethod?.IsPublic == true)
+                    {
+                        p.GetMethod = null;
+                        Trace.WriteLine($"Removed: {type.FullName} | {p.FullName}_get()");
+                    }
+
+                    if (!p.SetMethod?.IsPublic == true)
+                    {
+                        p.SetMethod = null;
+                        Trace.WriteLine($"Removed: {type.FullName} | {p.FullName}_set()");
+                    }
+
+                    if (p.GetMethod == null && p.SetMethod == null)
+                    {
+                        propertiesToRemove.Add(p);
+                    }
+                }
+
+                propertiesToRemove.ForEach(p => 
+                {
+                    type.Properties.Remove(p);
+                    Trace.WriteLine($"Removed: {type.FullName} | {p.FullName}");
+                });
+            }
+            finally
+            {
+                Trace.Unindent();
+            }
+        }
+
+        internal static bool CheckConsistency(this AssemblyDefinition def)
+        {
+            Trace.IndentLevel = 0;
+            Trace.WriteLine(nameof(CheckConsistency));
+            Trace.IndentLevel++;
+
+            bool success = true;
+
+            def
+                .MainModule
+                .GetTypeReferences()
+                .Where(tr => tr.Scope == def.MainModule.Assembly.Name)
+                .ToList()
+                .ForEach((tr) => 
+            {
+                try
+                {
+                    tr.Resolve();
+                }
+                catch (Exception e)
+                {
+                    Trace.WriteLine($"Failed to resolve TypeRef: {tr?.Scope?.Name ?? "Unknown"}:{tr.FullName}");
+                    success = false;
+                }
+            });
+
+            Trace.WriteLine($"Result: {success}");
+            Trace.Unindent();
+            return success;
         }
 
         internal static void ChangeToDll(this AssemblyDefinition def)
