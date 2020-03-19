@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using Mono.Cecil;
 
 namespace RefGen
@@ -26,19 +27,38 @@ namespace RefGen
             {
                 using (var scopedCopy = file.CreateTemporaryCopy())
                 {
-                    var assemblyDefinition = AssemblyDefinition.ReadAssembly(file.FullName);
+                    var assemblyResolver = new DefaultAssemblyResolver();
+                    assemblyResolver.AddSearchDirectory(Path.GetDirectoryName(file.FullName));
+                    
+                    var assemblyDefinition = 
+                        AssemblyDefinition.ReadAssembly(
+                            file.FullName, 
+                            new ReaderParameters() 
+                            {
+                                AssemblyResolver = assemblyResolver,
+                                ReadSymbols = true
+                            });
+                    
                     assemblyDefinition.RemoveMethodBodies();
                     assemblyDefinition.RemoveNonPublicTypes();
                     assemblyDefinition.RemoveNonPublicNestedTypes();
                     assemblyDefinition.RemoveNonPublicMethodsAndFields();
+                    assemblyDefinition.RemoveNonPublicProperties();
+                    assemblyDefinition.RemoveFieldInitializers();
 
                     assemblyDefinition.MainModule.Attributes = ModuleAttributes.ILOnly;
-                    
 
-                    assemblyDefinition.Write(scopedCopy.FullName);
-
-                    Console.WriteLine(scopedCopy.FullName);
-                    Trace.WriteLine(scopedCopy.FullName);
+                    if (assemblyDefinition.CheckConsistency())
+                    {
+                        assemblyDefinition.Write(
+                            scopedCopy.FullName, 
+                            new WriterParameters() 
+                            { 
+                                WriteSymbols = true
+                            });
+                        Console.WriteLine(scopedCopy.FullName);
+                        Trace.WriteLine(scopedCopy.FullName);
+                    }
                 }
             }
             catch (Exception e)
