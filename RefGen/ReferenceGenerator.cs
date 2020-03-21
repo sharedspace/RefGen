@@ -44,7 +44,8 @@ namespace RefGen
                 assemblyDefinition.RemoveNonPublicMethodsAndFields();
                 assemblyDefinition.RemoveNonPublicProperties();
                 assemblyDefinition.RemoveFieldInitializers();
-
+                assemblyDefinition.RemoveResources();
+                assemblyDefinition.RemoveCommonAssemblyAttributes();
 
                 assemblyDefinition.MainModule.Attributes = ModuleAttributes.ILOnly;
 

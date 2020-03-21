@@ -259,6 +259,73 @@ namespace RefGen
             }
         }
 
+        internal static void RemoveResources(this AssemblyDefinition def)
+        {
+            if (def.MainModule.HasResources)
+            {
+                def.MainModule.Resources.Clear();
+            }
+        }
+
+        internal static void RemoveCommonAssemblyAttributes(this AssemblyDefinition def)
+        {
+            Trace.IndentLevel = 0;
+            Trace.Write(nameof(RemoveCommonAssemblyAttributes));
+            Trace.Indent();
+
+            var ava = def.MainModule.ImportReference(new TypeReference("System.Reflection", "AssemblyVersionAttribute", def.MainModule, def.MainModule.TypeSystem.CoreLibrary));
+            var assemblyAttributesToIgnore = new List<TypeReference>
+            {
+                def.MainModule.ImportReference(typeof(AssemblyVersionAttribute)),
+                def.MainModule.ImportReference(typeof(NeutralResourcesLanguageAttribute)),
+                def.MainModule.ImportReference(typeof(AssemblyVersionAttribute)),
+                def.MainModule.ImportReference(typeof(AssemblyTitleAttribute)),
+                def.MainModule.ImportReference(typeof(AssemblyProductAttribute)),
+                def.MainModule.ImportReference(typeof(AssemblyInformationalVersionAttribute)),
+                def.MainModule.ImportReference(typeof(AssemblyFileVersionAttribute)),
+                def.MainModule.ImportReference(typeof(AssemblyConfigurationAttribute)),
+                def.MainModule.ImportReference(typeof(AssemblyCompanyAttribute)),
+                def.MainModule.ImportReference(typeof(AssemblyMetadataAttribute)),
+                def.MainModule.ImportReference(typeof(AssemblyDefaultAliasAttribute)),
+                def.MainModule.ImportReference(typeof(DefaultDllImportSearchPathsAttribute)),
+                def.MainModule.ImportReference(typeof(CLSCompliantAttribute)),
+                def.MainModule.ImportReference(typeof(DependencyAttribute)),
+                def.MainModule.ImportReference(typeof(DebuggableAttribute)),
+                def.MainModule.ImportReference(typeof(RuntimeCompatibilityAttribute)),
+                def.MainModule.ImportReference(typeof(CompilationRelaxationsAttribute)),
+            }.AsReadOnly();
+
+            var moduleAttributesToIgnore = new List<TypeReference>
+            {
+                def.MainModule.ImportReference(typeof(UnverifiableCodeAttribute)),
+            }.AsReadOnly();
+
+            var attributesToRemove =
+                def
+                .CustomAttributes
+                .Where(a => assemblyAttributesToIgnore.Contains(a.AttributeType, TypeReferenceEqualityComparer.Comparer))
+                .ToList();
+
+            var moduleAttributesToRemove =
+                def
+                .MainModule
+                .CustomAttributes
+                .Where(a => moduleAttributesToIgnore.Contains(a.AttributeType, TypeReferenceEqualityComparer.Comparer))
+                .ToList();
+
+            attributesToRemove.ForEach(a => 
+            { 
+                def.CustomAttributes.Remove(a);
+                Trace.WriteLine($"Removed [assembly:{a.AttributeType.FullName}]");
+            });
+            moduleAttributesToRemove.ForEach(a =>
+            {
+                def.MainModule.CustomAttributes.Remove(a);
+                Trace.WriteLine($"Removed [module:{a.AttributeType.FullName}]");
+            });
+            Trace.Unindent();
+        }
+
 
         internal static bool CheckConsistency(this AssemblyDefinition def)
         {
