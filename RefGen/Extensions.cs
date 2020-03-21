@@ -5,7 +5,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Security;
 
 namespace RefGen
 {
@@ -108,7 +112,9 @@ namespace RefGen
 
                     Trace.WriteLine($"Removed {type.FullName}");
                 }
-                catch(Exception e)
+#pragma warning disable CA1031 // Do not catch general exception types
+                catch (Exception e)
+#pragma warning restore CA1031 // Do not catch general exception types
                 {
                     Console.WriteLine(e.ToString());
                 }
@@ -197,7 +203,7 @@ namespace RefGen
                 }
                 else
                 {
-                    Trace.WriteLine($"Skipping const field: {field.DeclaringType.FullName} | {field.FullName}={field.Constant.ToString()}");
+                    Trace.WriteLine($"Skipping const field: {field.DeclaringType.FullName} | {field.FullName}={field.Constant}");
                 }
             }
 
@@ -253,6 +259,7 @@ namespace RefGen
             }
         }
 
+
         internal static bool CheckConsistency(this AssemblyDefinition def)
         {
             Trace.IndentLevel = 0;
@@ -272,8 +279,11 @@ namespace RefGen
                 {
                     tr.Resolve();
                 }
+#pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception e)
+#pragma warning restore CA1031 // Do not catch general exception types
                 {
+                    Trace.Write($"{e.GetType().Name}: {e.Message}");
                     Trace.WriteLine($"Failed to resolve TypeRef: {tr?.Scope?.Name ?? "Unknown"}:{tr.FullName}");
                     success = false;
                 }

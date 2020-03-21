@@ -14,12 +14,12 @@ namespace RefGen
             _good = false;
         }
 
-        public void Test() 
+        public static void Test() 
         {
             ProtectedTest();
         } 
 
-        protected void ProtectedTest()
+        protected static void ProtectedTest()
         {
 
         }
@@ -56,8 +56,8 @@ namespace RefGen
         private bool _good;
 
         [ThreadStatic]
-        private static bool _threadStaticValue;
+        private static readonly bool _threadStaticValue;
 
-        private B _b = new B();
+        private readonly B _b = new B();
     }
 }

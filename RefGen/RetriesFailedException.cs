@@ -4,7 +4,7 @@ using System.Runtime.Serialization;
 namespace RefGen
 {
     [Serializable]
-    internal class RetriesFailedException : Exception
+    public class RetriesFailedException : Exception
     {
         public RetriesFailedException()
         {

@@ -25,43 +25,44 @@ namespace RefGen
         {
             try
             {
-                using (var scopedCopy = file.CreateTemporaryCopy())
+                using var scopedCopy = file.CreateTemporaryCopy();
+                var assemblyResolver = new DefaultAssemblyResolver();
+                assemblyResolver.AddSearchDirectory(Path.GetDirectoryName(file.FullName));
+
+                var assemblyDefinition =
+                    AssemblyDefinition.ReadAssembly(
+                        file.FullName,
+                        new ReaderParameters()
+                        {
+                            AssemblyResolver = assemblyResolver,
+                            ReadSymbols = true
+                        });
+
+                assemblyDefinition.RemoveMethodBodies();
+                assemblyDefinition.RemoveNonPublicTypes();
+                assemblyDefinition.RemoveNonPublicNestedTypes();
+                assemblyDefinition.RemoveNonPublicMethodsAndFields();
+                assemblyDefinition.RemoveNonPublicProperties();
+                assemblyDefinition.RemoveFieldInitializers();
+
+
+                assemblyDefinition.MainModule.Attributes = ModuleAttributes.ILOnly;
+
+                if (assemblyDefinition.CheckConsistency())
                 {
-                    var assemblyResolver = new DefaultAssemblyResolver();
-                    assemblyResolver.AddSearchDirectory(Path.GetDirectoryName(file.FullName));
-                    
-                    var assemblyDefinition = 
-                        AssemblyDefinition.ReadAssembly(
-                            file.FullName, 
-                            new ReaderParameters() 
-                            {
-                                AssemblyResolver = assemblyResolver,
-                                ReadSymbols = true
-                            });
-                    
-                    assemblyDefinition.RemoveMethodBodies();
-                    assemblyDefinition.RemoveNonPublicTypes();
-                    assemblyDefinition.RemoveNonPublicNestedTypes();
-                    assemblyDefinition.RemoveNonPublicMethodsAndFields();
-                    assemblyDefinition.RemoveNonPublicProperties();
-                    assemblyDefinition.RemoveFieldInitializers();
-
-                    assemblyDefinition.MainModule.Attributes = ModuleAttributes.ILOnly;
-
-                    if (assemblyDefinition.CheckConsistency())
-                    {
-                        assemblyDefinition.Write(
-                            scopedCopy.FullName, 
-                            new WriterParameters() 
-                            { 
-                                WriteSymbols = true
-                            });
-                        Console.WriteLine(scopedCopy.FullName);
-                        Trace.WriteLine(scopedCopy.FullName);
-                    }
+                    assemblyDefinition.Write(
+                        scopedCopy.FullName,
+                        new WriterParameters()
+                        {
+                            WriteSymbols = true
+                        });
+                    Console.WriteLine(scopedCopy.FullName);
+                    Trace.WriteLine(scopedCopy.FullName);
                 }
             }
+#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception e)
+#pragma warning restore CA1031 // Do not catch general exception types
             {
                 Console.WriteLine(e.ToString());
                 Trace.WriteLine(e.ToString());
