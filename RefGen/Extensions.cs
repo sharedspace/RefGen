@@ -1,5 +1,9 @@
-﻿using Mono.Cecil;
+﻿using ICSharpCode.Decompiler;
+using ICSharpCode.Decompiler.CSharp;
+using ICSharpCode.Decompiler.Metadata;
+using Mono.Cecil;
 using Mono.Cecil.Cil;
+using RefGen.IEqualityComparers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -104,11 +108,17 @@ namespace RefGen
                 try
                 {
                     def.MainModule.Types.Remove(type);
+                    
 
-                    if (def.MainModule.GetMemberReferences().Where(m => m.DeclaringType == type).ToList().Count != 0)
-                    {
-                        Trace.WriteLine($"WARNING: {type.FullName} has dangling references");
-                    }
+                    //if (def
+                    //    .MainModule
+                    //    .GetMemberReferences()
+                    //    .Where(m => m.DeclaringType.Resolve() == type)
+                    //    .ToList()
+                    //    .Count != 0)
+                    //{
+                    //    Trace.WriteLine($"WARNING: {type.FullName} has dangling references");
+                    //}
 
                     Trace.WriteLine($"Removed {type.FullName}");
                 }
@@ -118,6 +128,43 @@ namespace RefGen
                 {
                     Console.WriteLine(e.ToString());
                 }
+            }
+        }
+
+        internal static void RemoveNonPublicBaseTypesAndInterfaces(this AssemblyDefinition def)
+        {
+            Trace.IndentLevel = 0;
+            Trace.WriteLine(nameof(RemoveNonPublicBaseTypesAndInterfaces));
+            Trace.Indent();
+
+            foreach (var type in def.MainModule.Types)
+            {
+                if (type.BaseType != null && 
+                    type.BaseType.Module == def.MainModule &&
+                    !type.BaseType.Resolve().IsPublic)
+                {
+                    Trace.WriteLine($"Removing Base Type {type.BaseType.FullName} from {type.FullName}");
+                    type.BaseType = null;
+                }
+
+                if (type.Interfaces != null)
+                {
+                    var nonPublicInterfaces = new List<InterfaceImplementation>();
+                    foreach (var i in type.Interfaces.Where(x => x.InterfaceType.Module == def.MainModule))
+                    {
+                        if (!i.InterfaceType.Resolve().IsPublic)
+                        {
+                            nonPublicInterfaces.Add(i);
+                        }
+                    }
+                    nonPublicInterfaces.ForEach(i => 
+                    {
+                        Trace.WriteLine($"Removing Interface {i.InterfaceType.FullName} from type {type.FullName}");
+                        type.Interfaces.Remove(i); 
+                    });
+                }
+
+                Trace.Unindent();
             }
         }
 
@@ -376,6 +423,16 @@ namespace RefGen
 
             Debug.Assert(def.MainModule.Kind == ModuleKind.Dll);
             Debug.Assert(def.MainModule.EntryPoint == null);
+        }
+
+        internal static void Decompile(this ScopedFileInfo file, DirectoryInfo outputDirectory)
+        {
+            var decompiler = new WholeProjectDecompiler()
+            {
+                AssemblyResolver = new UniversalAssemblyResolver(file.Name, false, string.Empty)
+            };
+            using var peFile = new PEFile(file.FullName);
+            decompiler.DecompileProject(peFile, outputDirectory.FullName);
         }
     }
 }

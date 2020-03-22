@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-namespace RefGen
+namespace RefGen.IEqualityComparers
 {
     internal class TypeReferenceEqualityComparer : IEqualityComparer<TypeReference>
     {

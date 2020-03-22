@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -21,13 +22,21 @@ namespace RefGen
         ///         - Decompile
         ///     - Delete temp file
         /// </remarks>
-        internal static void Generate(FileSystemInfo file)
+        internal static void Generate(
+            FileSystemInfo file, 
+            DirectoryInfo d, 
+            IReadOnlyCollection<DirectoryInfo> refAssemblyDirs)
         {
             try
             {
                 using var scopedCopy = file.CreateTemporaryCopy();
+
                 var assemblyResolver = new DefaultAssemblyResolver();
                 assemblyResolver.AddSearchDirectory(Path.GetDirectoryName(file.FullName));
+                foreach (var dir in refAssemblyDirs.AsEnumerable() ?? Enumerable.Empty<DirectoryInfo>())
+                {
+                    assemblyResolver.AddSearchDirectory(dir.FullName);
+                }
 
                 var assemblyDefinition =
                     AssemblyDefinition.ReadAssembly(
@@ -41,6 +50,7 @@ namespace RefGen
                 assemblyDefinition.RemoveMethodBodies();
                 assemblyDefinition.RemoveNonPublicTypes();
                 assemblyDefinition.RemoveNonPublicNestedTypes();
+                assemblyDefinition.RemoveNonPublicBaseTypesAndInterfaces();
                 assemblyDefinition.RemoveNonPublicMethodsAndFields();
                 assemblyDefinition.RemoveNonPublicProperties();
                 assemblyDefinition.RemoveFieldInitializers();
@@ -59,6 +69,8 @@ namespace RefGen
                         });
                     Console.WriteLine(scopedCopy.FullName);
                     Trace.WriteLine(scopedCopy.FullName);
+
+                    scopedCopy.Decompile(d);
                 }
             }
 #pragma warning disable CA1031 // Do not catch general exception types
