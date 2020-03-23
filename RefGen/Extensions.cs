@@ -159,7 +159,19 @@ namespace RefGen
                     nonPublicInterfaces.ForEach(i => 
                     {
                         Trace.WriteLine($"Removing Interface {i.InterfaceType.FullName} from type {type.FullName}");
-                        type.Interfaces.Remove(i); 
+                        type.Interfaces.Remove(i);
+                        var methodsToRemove =
+                            type
+                            .Methods
+                            .Where(m =>
+                                m.HasOverrides &&
+                                m.Overrides.Any(o => o.Resolve().DeclaringType == i.InterfaceType))
+                            .ToList();
+                        methodsToRemove.ForEach(m =>
+                        {
+                            type.Methods.Remove(m);
+                            Trace.WriteLine($"Removed Interface Method {m.FullName}");
+                        });
                     });
                 }
 
@@ -201,10 +213,11 @@ namespace RefGen
 
             foreach (var type in def.MainModule.Types)
             {
+                // Include public and protected methods/fields
                 var nonPublicMethods = 
-                    type.Methods.Where((m) => !m.IsPublic).ToList();
+                    type.Methods.Where((m) => !m.IsPublic && !m.IsFamily && m.Overrides.Count == 0).ToList();
                 var nonPublicFields =
-                    type.Fields.Where((f) => !f.IsPublic).ToList();
+                    type.Fields.Where((f) => !f.IsPublic && !f.IsFamily).ToList();
 
                 nonPublicMethods.ForEach((m) => 
                 {
