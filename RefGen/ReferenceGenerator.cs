@@ -53,6 +53,7 @@ namespace RefGen
                 assemblyDefinition.RemoveNonPublicBaseTypesAndInterfaces();
                 assemblyDefinition.RemoveNonPublicMethodsAndFields();
                 assemblyDefinition.RemoveNonPublicProperties();
+                assemblyDefinition.RemoveAttributesWithNonPublicTypeRefs();
                 assemblyDefinition.RemoveFieldInitializers();
                 assemblyDefinition.RemoveResources();
                 assemblyDefinition.RemoveCommonAssemblyAttributes();

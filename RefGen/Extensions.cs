@@ -17,7 +17,7 @@ using System.Security;
 
 namespace RefGen
 {
-    internal static class Extensions
+    internal static partial class Extensions
     {
         internal static ScopedFileInfo CreateTemporaryCopy(this FileSystemInfo file)
         {
@@ -278,6 +278,61 @@ namespace RefGen
             {
                 type.RemoveNonPublicProperties();
             }
+        }
+
+        internal static void RemoveAttributesWithNonPublicTypeRefs(this AssemblyDefinition def)
+        {
+            Trace.IndentLevel = 0;
+            Trace.WriteLine(nameof(RemoveAttributesWithNonPublicTypeRefs));
+            Trace.Indent();
+            foreach (var type in def.MainModule.Types)
+            {
+                if (type.HasCustomAttributes)
+                {
+                    var attrsToRemove = new List<CustomAttribute>();
+                    foreach (var attr in type.CustomAttributes)
+                    {
+                        var attrType = attr.AttributeType.Resolve();
+                        if (!attrType.IsPublic)
+                        {
+                            attrsToRemove.Add(attr);
+                            continue;
+                        }
+
+                        if (attr.HasConstructorArguments)
+                        {
+                            var tType = def.MainModule.ImportReference(typeof(Type));
+                            if (attr.ConstructorArguments.Any(ca =>
+                            {
+                                if (TypeReferenceEqualityComparer.Comparer.Equals(ca.Type,tType))
+                                {
+                                    // ca.Value is a System.Type object
+                                    if (ca.Value is TypeReference caValueRef)
+                                    {
+                                        var caValue = caValueRef.Resolve();
+                                        var isPublic =
+                                            caValue != null && 
+                                            ((caValue.IsPublic && !caValue.IsNested) ||
+                                            (caValue.IsNestedPublic && caValue.IsNested));
+                                        return !isPublic;
+                                    }
+                                }
+                                return false;
+                            }))
+                            {
+                                attrsToRemove.Add(attr);
+                            }
+                        }
+                    }
+
+                    attrsToRemove.ForEach(a =>
+                    {
+                        type.CustomAttributes.Remove(a);
+                        Trace.WriteLine($"Removed CustomAttribute {a.AttributeType.FullName}");
+                    });
+                }
+            }
+            Trace.Unindent();
         }
 
         internal static void RemoveNonPublicProperties(this TypeDefinition type)
