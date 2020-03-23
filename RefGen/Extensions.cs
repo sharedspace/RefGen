@@ -140,7 +140,6 @@ namespace RefGen
             foreach (var type in def.MainModule.Types)
             {
                 if (type.BaseType != null && 
-                    type.BaseType.Module == def.MainModule &&
                     !type.BaseType.Resolve().IsPublic)
                 {
                     Trace.WriteLine($"Removing Base Type {type.BaseType.FullName} from {type.FullName}");
@@ -150,7 +149,7 @@ namespace RefGen
                 if (type.Interfaces != null)
                 {
                     var nonPublicInterfaces = new List<InterfaceImplementation>();
-                    foreach (var i in type.Interfaces.Where(x => x.InterfaceType.Module == def.MainModule))
+                    foreach (var i in type.Interfaces)
                     {
                         if (!i.InterfaceType.Resolve().IsPublic)
                         {
