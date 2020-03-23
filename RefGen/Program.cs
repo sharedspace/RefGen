@@ -80,12 +80,12 @@ namespace RefGen
 
         private static void EnsureOutput(DirectoryInfo output, bool zapOutput)
         {
-            if (zapOutput && output.Exists)
+            if (zapOutput && Directory.Exists(output.FullName))
             {
                 output.Delete(recursive: true);
             }
 
-            if (!output.Exists)
+            if (!Directory.Exists(output.FullName))
             {
                 output.Create();
             }
