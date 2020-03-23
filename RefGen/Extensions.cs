@@ -343,13 +343,15 @@ namespace RefGen
                 var propertiesToRemove = new List<PropertyDefinition>();
                 foreach (var p in type.Properties)
                 {
-                    if (!p.GetMethod?.IsPublic == true)
+
+                    if (p.GetMethod != null && !p.GetMethod.IsPublic && !p.GetMethod.IsFamily && p.GetMethod.Overrides?.Count == 0)
                     {
                         p.GetMethod = null;
                         Trace.WriteLine($"Removed: {type.FullName} | {p.FullName}_get()");
                     }
 
-                    if (!p.SetMethod?.IsPublic == true)
+
+                    if (p.SetMethod != null && !p.SetMethod.IsPublic && !p.SetMethod.IsFamily && p.SetMethod.Overrides?.Count == 0)
                     {
                         p.SetMethod = null;
                         Trace.WriteLine($"Removed: {type.FullName} | {p.FullName}_set()");
