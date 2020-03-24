@@ -61,6 +61,44 @@ namespace RefGen
                     if (method.HasBody)
                     {
                         var il = method.Body.GetILProcessor();
+
+                        MethodDefinition ctorToCall = null;
+
+                        if (method.IsConstructor && 
+                            !method.IsStatic && 
+                            type.BaseType?.Resolve()?.Methods?.Any(m => m.IsConstructor && !m.IsStatic && m.Parameters.Count == 0) != true)
+                        {
+                            // This is a constructor...
+                            //  ... in a type whose base-class lacks a default constructor. 
+                            // Therefore the first call in this method is likely a call to a constructor itself. 
+                            //  Idenfify and preserve this call. 
+                            var call = il.Body.Instructions.FirstOrDefault(i => i.OpCode == OpCodes.Call);
+                            if (call != null && 
+                                call.Operand is MethodReference m && 
+                                m.Resolve() is MethodDefinition md && 
+                                md.IsConstructor)
+                            {
+                                // Generate a "dummy" call to this constructor 
+                                if (md.IsPublic)
+                                {
+                                    ctorToCall = md;
+                                }
+                                else
+                                {
+                                    ctorToCall = 
+                                        type
+                                        .BaseType
+                                        .Resolve()
+                                        ?.Methods
+                                        ?.FirstOrDefault(
+                                            m => 
+                                                m.IsConstructor && 
+                                                !m.IsStatic && 
+                                                (m.IsPublic || m.IsFamily));
+                                }
+                            }
+                        }
+
                         while (il.Body.Instructions.Count > 0)
                         {
                             il.RemoveAt(0);
@@ -70,6 +108,21 @@ namespace RefGen
                         il.Body.ExceptionHandlers.Clear();
                         il.Body.InitLocals = false;
 
+                        if (ctorToCall != null && ctorToCall.IsPublic)
+                        {
+                            if (ctorToCall.Parameters.Count > 0)
+                            {
+                                il.Emit(OpCodes.Ldarg_0);
+                                foreach (var p in ctorToCall.Parameters)
+                                {
+                                    p.GenerateDefaultParameterValue(il);
+                                }
+                                il.Emit(OpCodes.Call, ctorToCall);
+                                il.Emit(OpCodes.Nop);
+                                il.Emit(OpCodes.Nop);
+                            }
+                        }
+
                         il.Emit(OpCodes.Newobj, tRefNotImplementedExceptionCtor);
                         il.Emit(OpCodes.Throw);
 
@@ -77,6 +130,64 @@ namespace RefGen
                     }
                 }
             }
+        }
+
+        private static void GenerateDefaultParameterValue(this ParameterDefinition p, ILProcessor il)
+        {
+            if (p.ParameterType.HasGenericParameters ||
+                p.ParameterType.ContainsGenericParameter)
+            {
+                p.GenerateDefaultParameterValueForGenerics(il);
+                return;
+            }
+
+            var parameterType = p.ParameterType.Resolve();
+            if (!parameterType.IsValueType)
+            {
+                il.Emit(OpCodes.Ldnull);
+            }
+            else
+            {
+                switch (parameterType.MetadataType)
+                {
+                    case MetadataType.Boolean:
+                    case MetadataType.Char:
+                    case MetadataType.Int16:
+                    case MetadataType.UInt16:
+                    case MetadataType.Int32:
+                    case MetadataType.UInt32:
+                    case MetadataType.SByte:
+                    case MetadataType.Byte:
+                        il.Emit(OpCodes.Ldc_I4_0);
+                        break;
+                    case MetadataType.Int64:
+                    case MetadataType.UInt64:
+                        il.Emit(OpCodes.Ldc_I4_0);
+                        il.Emit(OpCodes.Conv_I8);
+                        break;
+                    case MetadataType.Single:
+                        il.Emit(OpCodes.Ldc_R4, 0.0);
+                        break;
+                    case MetadataType.Double:
+                        il.Emit(OpCodes.Ldc_R8, 0.0);
+                        break;
+                    case MetadataType.ByReference:
+                        break;
+                    case MetadataType.Array:
+                        il.Emit(OpCodes.Ldnull);
+                        break;
+                    case MetadataType.IntPtr:
+                    case MetadataType.UIntPtr:
+                        il.Emit(OpCodes.Ldc_I4_0);
+                        il.Emit(OpCodes.Conv_I);
+                        break;
+                }
+            }
+        }
+
+        private static void GenerateDefaultParameterValueForGenerics(this ParameterDefinition p, ILProcessor il)
+        {
+
         }
 
         internal static void RemoveNonPublicTypes(this AssemblyDefinition def)
@@ -224,7 +335,7 @@ namespace RefGen
                     if (m != entryPointMethod)
                     {
                         type.Methods.Remove(m);
-                        Trace.WriteLine($"Removed {m?.DeclaringType?.FullName ?? "Unknown"} | {m.FullName}");
+                        Trace.WriteLine($"Removed {type.FullName} | {m.FullName}");
                         if (def.MainModule.GetMemberReferences().Where(mr => mr == m).ToList().Count != 0)
                         {
                             Trace.WriteLine($"WARNING: {m.FullName} has dangling references");
@@ -234,7 +345,7 @@ namespace RefGen
                 nonPublicFields.ForEach((f) => 
                 {
                     type.Fields.Remove(f);
-                    Trace.WriteLine($"Removed {f?.DeclaringType?.FullName ?? "Unknown"} | {f.FullName}");
+                    Trace.WriteLine($"Removed {type.FullName} | {f.FullName}");
                     if (def.MainModule.GetMemberReferences().Where(mr => mr == f).ToList().Count != 0)
                     {
                         Trace.WriteLine($"WARNING: {f.FullName} has dangling references");
