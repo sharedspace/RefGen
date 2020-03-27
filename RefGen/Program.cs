@@ -29,7 +29,7 @@ namespace RefGen
                 .ExistingOnly(),
                 new Option<FileInfo[]>(
                     new []{"-r", "--reference-assemblies" },
-                    "Reference Assemblies").
+                    "List of Reference Assemblies").
                     ExistingOnly(),
                 new Option<DirectoryInfo>(
                     new []{"--output", "-o"},
