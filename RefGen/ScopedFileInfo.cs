@@ -18,7 +18,7 @@ namespace RefGen
 
         public void Dispose()
         {
-            //Delete();
+            Delete();
         }
 
         private FileInfo FileInfo { get; }
