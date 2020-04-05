@@ -1,0 +1,3 @@
+[submodule "eng/NetCoreScripts"]
+	path = eng/NetCoreScripts
+	url = https://github.com/vatsan-madhavan/NetCoreScripts
