@@ -22,18 +22,23 @@ namespace RefGen
                 new Option<FileInfo>(
                     new []{"--input", "-i"}, 
                     "Input Assembly")
-                .ExistingOnly(),
+                {
+                    Required = true
+                }.ExistingOnly(),
                 new Option<DirectoryInfo[]>(
                     new []{"--reference-assembly-dirs" }, 
                     "Directories containing Reference Assemblies")
                 .ExistingOnly(),
                 new Option<FileInfo[]>(
                     new []{"-r", "--reference-assemblies" },
-                    "List of Reference Assemblies").
-                    ExistingOnly(),
+                    "List of Reference Assemblies")
+                .ExistingOnly(),
                 new Option<DirectoryInfo>(
                     new []{"--output", "-o"},
-                    "Output Directory"),
+                    "Output Directory")
+                {
+                    Required = true
+                },
                 new Option<bool>(
                     new[]{"--zap-output", "-z"},
                     "Delete and recreate output folder if it already exists")
@@ -57,7 +62,11 @@ namespace RefGen
             DirectoryInfo output,
             bool zapOutput)
         {
-            EnsureOutput(output, zapOutput);
+            if (!EnsureOutput(output, zapOutput))
+            {
+                return;
+            }
+
             var refAssemblyDirs = IdentifyReferenceAssembyDirectories(referenceAssemblyDirs, referenceAssemblies);
             ReferenceGenerator.Generate(input, output, refAssemblyDirs);
         }
@@ -78,17 +87,19 @@ namespace RefGen
             return refAssemblyDirs.AsReadOnly();
         }
 
-        private static void EnsureOutput(DirectoryInfo output, bool zapOutput)
+        private static bool EnsureOutput(DirectoryInfo output, bool zapOutput)
         {
-            if (zapOutput && Directory.Exists(output.FullName))
+            if (zapOutput && output?.FullName != null && Directory.Exists(output.FullName))
             {
                 output.Delete(recursive: true);
             }
 
-            if (!Directory.Exists(output.FullName))
+            if (output?.FullName != null && !Directory.Exists(output.FullName))
             {
                 output.Create();
             }
+
+            return output?.FullName != null && Directory.Exists(output.FullName);
         }
     }
 }
