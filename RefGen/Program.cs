@@ -67,24 +67,7 @@ namespace RefGen
                 return;
             }
 
-            var refAssemblyDirs = IdentifyReferenceAssembyDirectories(referenceAssemblyDirs, referenceAssemblies);
-            ReferenceGenerator.Generate(input, output, refAssemblyDirs);
-        }
-
-        private static IReadOnlyCollection<DirectoryInfo> IdentifyReferenceAssembyDirectories(
-            DirectoryInfo[] referenceAssemblyDirs, 
-            FileInfo[] referenceAssemblies)
-        {
-            var refAssemblyDirs = 
-                new List<DirectoryInfo>(referenceAssemblyDirs ?? Enumerable.Empty<DirectoryInfo>());
-            var directories = new HashSet<DirectoryInfo>(DirectoryInfoComparer.Comparer);
-            foreach (var assembly in referenceAssemblies ?? Enumerable.Empty<FileInfo>())
-            {
-                directories.Add(assembly.Directory);
-            }
-
-            refAssemblyDirs.AddRange(directories);
-            return refAssemblyDirs.AsReadOnly();
+            ReferenceGenerator.Generate(input, output, referenceAssemblyDirs, referenceAssemblies);
         }
 
         private static bool EnsureOutput(DirectoryInfo output, bool zapOutput)

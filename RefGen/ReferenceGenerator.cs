@@ -25,25 +25,22 @@ namespace RefGen
         internal static void Generate(
             FileSystemInfo file, 
             DirectoryInfo d, 
-            IReadOnlyCollection<DirectoryInfo> refAssemblyDirs)
+            IReadOnlyCollection<DirectoryInfo> refAssemblyDirs, 
+            IReadOnlyCollection<FileInfo> referenceAssemblies)
         {
             try
             {
                 using var scopedCopy = file.CreateTemporaryCopy();
-
-                var assemblyResolver = new DefaultAssemblyResolver();
-                assemblyResolver.AddSearchDirectory(Path.GetDirectoryName(file.FullName));
-                foreach (var dir in refAssemblyDirs.AsEnumerable() ?? Enumerable.Empty<DirectoryInfo>())
-                {
-                    assemblyResolver.AddSearchDirectory(dir.FullName);
-                }
 
                 var assemblyDefinition =
                     AssemblyDefinition.ReadAssembly(
                         file.FullName,
                         new ReaderParameters()
                         {
-                            AssemblyResolver = assemblyResolver,
+                            AssemblyResolver = new PathAssemblyResolver(
+                                referenceAssemblies,
+                                refAssemblyDirs,
+                                new FileInfo(file.FullName).Directory),
                             ReadSymbols = true
                         });
 
